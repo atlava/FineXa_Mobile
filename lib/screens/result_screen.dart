@@ -101,11 +101,20 @@ class ResultScreen extends StatelessWidget {
                 ),
                 const Spacer(),
                 PrimaryButton(
-                  label: 'Selesai',
+                  label: 'Terapkan Rekomendasi',
                   icon: Icons.check,
                   onPressed: () {
-                    Navigator.popUntil(context, (r) => r.isFirst);
-                  },
+//                  1. Konversi teks profil dari backend ke RiskType enum
+                    final pLower = profil.toLowerCase();
+                    if (pLower.contains('agresif')) {
+                      AppState.risk.value = RiskType.agresif;
+                    } else if (pLower.contains('konservatif')) {
+                      AppState.risk.value = RiskType.konservatif;
+                    } else {
+                      AppState.risk.value = RiskType.moderat; // Default aman
+                    }
+                    // 2. Kembali ke halaman utama (MainShell)
+                    Navigator.popUntil(context, (r) => r.isFirst);                  },
                 ),
                 const SizedBox(height: 24),
               ],

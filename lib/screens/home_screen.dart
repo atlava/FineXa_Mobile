@@ -1,19 +1,79 @@
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 import '../data/risk_data.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common.dart';
 import 'questionnaire_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   final VoidCallback onGoToFaq;
-  const HomeScreen({super.key, required this.onGoToFaq});
+  // TODO: Pastikan userId ini diisi dari MainShell saat login!
+  final String userId;
+
+  const HomeScreen({
+    super.key,
+    required this.onGoToFaq,
+    this.userId = '1', // Default sementara untuk testing, ganti dengan ID user asli nanti
+  });
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      // Catatan: 10.0.2.2 adalah IP khusus emulator Android untuk mengakses localhost PC
+      final url = Uri.parse('http://10.0.2.2:5000/api/beranda/user-profile/${widget.userId}');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['profil_risiko'] != null) {
+          final profilStr = data['profil_risiko'].toString().toLowerCase();
+          if (profilStr.contains('agresif')) {
+            AppState.risk.value = RiskType.agresif;
+          } else if (profilStr.contains('konservatif')) {
+            AppState.risk.value = RiskType.konservatif;
+          } else {
+            AppState.risk.value = RiskType.moderat;
+          }
+        } else {
+          AppState.risk.value = null;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching data: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   void _startQuiz(BuildContext context) => Navigator.push(
       context, MaterialPageRoute(builder: (_) => const QuestionnaireScreen()));
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.emerald),
+      );
+    }
+
     return ValueListenableBuilder<RiskType?>(
       valueListenable: AppState.risk,
       builder: (context, risk, _) {
@@ -22,7 +82,12 @@ class HomeScreen extends StatelessWidget {
             children: [
               const _Header(),
               Expanded(
-                child: risk == null ? _empty(context) : _filled(context, risk),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
+                  children: [
+                    risk == null ? _empty(context) : _filledContent(context, risk),
+                  ],
+                ),
               ),
             ],
           ),
@@ -34,10 +99,10 @@ class HomeScreen extends StatelessWidget {
   // ---------- Empty state ----------
   Widget _empty(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 0, 28, 110),
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 110),
       child: Column(
         children: [
-          const Spacer(),
+          const SizedBox(height: 100),
           Container(
             width: 120,
             height: 120,
@@ -57,18 +122,18 @@ class HomeScreen extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.8)),
           ),
-          const Spacer(),
+          const SizedBox(height: 40),
           PrimaryButton(label: 'Mulai Analisis Sekarang', onPressed: () => _startQuiz(context)),
         ],
       ),
     );
   }
 
-  // ---------- Filled state ----------
-  Widget _filled(BuildContext context, RiskType type) {
+  // ---------- Filled content ----------
+  Widget _filledContent(BuildContext context, RiskType type) {
     final info = RiskData.info[type]!;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.all(14),
@@ -94,17 +159,17 @@ class HomeScreen extends StatelessWidget {
         Row(
           children: [
             _QuickTile(
-                icon: Icons.pie_chart_outline,
-                label: 'Produk Investasi',
-                onTap: () => ScaffoldMessenger.of(context)
-                    .showSnackBar(const SnackBar(content: Text('Segera hadir'))),),
+              icon: Icons.pie_chart_outline,
+              label: 'Produk Investasi',
+              onTap: () => ScaffoldMessenger.of(context)
+                  .showSnackBar(const SnackBar(content: Text('Segera hadir'))),),
             const SizedBox(width: 10),
             _QuickTile(
                 icon: Icons.show_chart,
                 label: 'Saran Investasi',
                 onTap: () => _startQuiz(context)),
             const SizedBox(width: 10),
-            _QuickTile(icon: Icons.school_outlined, label: 'FAQ', onTap: onGoToFaq),
+            _QuickTile(icon: Icons.school_outlined, label: 'FAQ', onTap: widget.onGoToFaq),
           ],
         ),
         const SizedBox(height: 12),
@@ -124,7 +189,7 @@ class HomeScreen extends StatelessWidget {
                     const Text('Profil risiko kamu', style: TextStyle(fontSize: 10)),
                     Text(info.label,
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                    Text(info.desc, style: const TextStyle(fontSize: 10)),
+                    Text(info.desc, style: TextStyle(fontSize: 10, color: Colors.grey[700])),
                   ],
                 ),
               ),
@@ -147,7 +212,7 @@ class HomeScreen extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('TOTAL', style: TextStyle(fontSize: 8)),
+                        Text('TOTAL', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w600)),
                         Text('100%',
                             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                       ],
@@ -160,23 +225,23 @@ class HomeScreen extends StatelessWidget {
                 child: Column(
                   children: info.allocations
                       .map((e) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 3),
-                            child: Row(
-                              children: [
-                                Container(
-                                    width: 7,
-                                    height: 7,
-                                    decoration:
-                                        BoxDecoration(color: e.color, shape: BoxShape.circle)),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                    child: Text(e.name, style: const TextStyle(fontSize: 9))),
-                                Text('${e.pct}%',
-                                    style: const TextStyle(
-                                        fontSize: 9, fontWeight: FontWeight.w700)),
-                              ],
-                            ),
-                          ))
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      children: [
+                        Container(
+                            width: 7,
+                            height: 7,
+                            decoration:
+                            BoxDecoration(color: e.color, shape: BoxShape.circle)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                            child: Text(e.name, style: const TextStyle(fontSize: 9))),
+                        Text('${e.pct}%',
+                            style: const TextStyle(
+                                fontSize: 9, fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+                  ))
                       .toList(),
                 ),
               ),
@@ -190,14 +255,14 @@ class HomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
-                Icon(Icons.auto_awesome, size: 16),
+                Icon(Icons.auto_awesome, size: 16, color: AppColors.emerald),
                 SizedBox(width: 6),
                 Text('Insight Finexa AI',
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
               ]),
               SizedBox(height: 6),
               Text(
-                'Portofoliomu tumbuh stabil. Pertimbangkan tambah 5% Obligasi untuk menjaga keseimbangan saat volatilitas meningkat.',
+                'Portofoliomu tumbuh stabil. Pertimbangkan diversifikasi berkala untuk menjaga keseimbangan.',
                 style: TextStyle(fontSize: 10),
               ),
             ],
@@ -271,10 +336,10 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(2, 18, 0, 8),
-        child: Text(text,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
-      );
+    padding: const EdgeInsets.fromLTRB(2, 18, 0, 8),
+    child: Text(text,
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+  );
 }
 
 class _QuickTile extends StatelessWidget {
@@ -344,6 +409,7 @@ class _DonutPainter extends CustomPainter {
     var start = -math.pi / 2;
     for (var i = 0; i < values.length; i++) {
       final sweep = values[i] / total * 2 * math.pi;
+
       final paint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = stroke

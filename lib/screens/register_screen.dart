@@ -28,10 +28,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  // Pastikan Anda sudah mengimpor package http di bagian atas file:
-  // import 'package:http/http.dart' as http;
-  // import 'dart:convert';
-
   Future<void> _register() async {
     setState(() {
       _nameErr = _name.text.trim().isEmpty ? 'Nama lengkap belum diisi, ya' : null;
@@ -42,8 +38,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if ([_nameErr, _emailErr, _passErr, _confirmErr].every((e) => e == null)) {
       try {
-        // Sesuaikan URL endpoint backend Laravel/Laragon Anda
-        // Catatan: Jika menggunakan Android Emulator, gunakan 10.0.2.2 untuk mengakses localhost PC
         final response = await http.post(
           Uri.parse('http://10.0.2.2:5000/api/auth/register'),
           headers: {'Content-Type': 'application/json'},
@@ -54,23 +48,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
           }),
         );
 
+        final data = jsonDecode(response.body);
+
         if (response.statusCode == 200 || response.statusCode == 201) {
-          // Jika registrasi berhasil ke database backend
+          // Tangkap ID user baru dari respons JSON backend
+          final int userIdRegister = data['data']['id_user'];
+
           if (!mounted) return;
+
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const MainShell()),
+            MaterialPageRoute(
+              builder: (_) => MainShell(userId: userIdRegister.toString()),
+            ),
                 (r) => false,
           );
         } else {
           // Tangani error dari server (misal: email sudah terdaftar)
-          final data = jsonDecode(response.body);
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(data['message'] ?? 'Registrasi gagal, silakan coba lagi')),
           );
         }
       } catch (e) {
-        // Tangani error koneksi (misal backend Laragon belum menyala)
+        if (!mounted) return;
+        // Tangani error koneksi
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Koneksi ke server gagal: $e')),
         );

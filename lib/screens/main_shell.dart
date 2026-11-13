@@ -7,7 +7,11 @@ import 'profile_screen.dart';
 import 'questionnaire_screen.dart';
 
 class MainShell extends StatefulWidget {
-  const MainShell({super.key});
+  // 1. Tambahkan variabel userId di sini
+  final String userId;
+
+  // 2. Jadikan parameter ini wajib diisi saat MainShell dipanggil
+  const MainShell({super.key, required this.userId});
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -29,7 +33,11 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
-      HomeScreen(onGoToFaq: () => setState(() => _index = 2)),
+      HomeScreen(
+        onGoToFaq: () => setState(() => _index = 2),
+        // 3. Teruskan userId yang didapat ke HomeScreen
+        userId: widget.userId,
+      ),
       const SizedBox.shrink(),
       const FaqScreen(),
       const ProfileScreen(),

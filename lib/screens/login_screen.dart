@@ -69,10 +69,11 @@ class _LoginScreenState extends State<LoginScreen> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('jwt_token', token);
         await prefs.setInt('user_id', userId);
-        // 5. Pindah ke halaman utama
+
+        // 5. Pindah ke halaman utama dan lempar ID aslinya
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const MainShell()),
+          MaterialPageRoute(builder: (_) => MainShell(userId: userId.toString())),
         );
       } else {
         // Jika server menolak (email/password salah)

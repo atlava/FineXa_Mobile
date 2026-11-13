@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common.dart';
 import 'main_shell.dart';
@@ -16,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _pass = TextEditingController();
   String? _emailError;
   String? _passError;
+  bool _isLoading = false; // Tambahan untuk indikator loading
 
   @override
   void dispose() {
@@ -24,15 +28,76 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
+  Future<void> _login() async {
+    // 1. Validasi form lokal
     setState(() {
       _emailError = _email.text.trim().isEmpty ? 'Email belum diisi, ya' : null;
-      _passError = _pass.text.length < 6 ? 'Ups! Password kurang tepat. Coba lagi, ya' : null;
+      _passError = _pass.text.isEmpty ? 'Ups! Password belum diisi' : null;
     });
-    if (_emailError == null && _passError == null) {
-      // TODO: ganti dengan autentikasi sungguhan
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => const MainShell()));
+
+    if (_emailError != null || _passError != null) return;
+
+    // 2. Mulai proses login ke server
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Sesuaikan URL dengan route Express-mu
+      // Jika pakai emulator Android, gunakan 10.0.2.2
+      final url = Uri.parse('http://10.0.2.2:5000/api/auth/login');
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': _email.text.trim(),
+          'password': _pass.text,
+          'platform': 'mobile', // Sesuai permintaan backend untuk validasi role
+        }),
+      );
+
+      final responseData = jsonDecode(response.body);
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        // 3. Login berhasil! Ambil token dari respons
+        final String token = responseData['data']['token'];
+        final int userId = responseData['data']['id_user'];
+        // 4. Simpan token ke memori lokal HP (Shared Preferences)
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('jwt_token', token);
+        await prefs.setInt('user_id', userId);
+        // 5. Pindah ke halaman utama
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainShell()),
+        );
+      } else {
+        // Jika server menolak (email/password salah)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['message'] ?? 'Gagal login.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal terhubung ke server. Pastikan backend menyala.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      print("Error Login Flutter: $error");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -74,7 +139,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                PrimaryButton(label: 'Login', onPressed: _login),
+
+                // Ganti tombol dengan indikator loading saat memproses
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.emerald))
+                    : PrimaryButton(label: 'Login', onPressed: _login),
+
                 const SizedBox(height: 14),
                 Center(
                   child: Wrap(

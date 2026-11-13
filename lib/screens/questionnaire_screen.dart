@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../data/risk_data.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common.dart';
-import 'result_screen.dart';
+import 'result_screen.dart'; // Nanti ini akan kita sesuaikan di langkah berikutnya
 
 class QuestionnaireScreen extends StatefulWidget {
   const QuestionnaireScreen({super.key});
@@ -17,23 +21,81 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   int _step = 0;
   int? _selected;
   bool _locked = false;
+  bool _isSubmitting = false; // Status untuk loading ML & LLM
+
+  // Fungsi baru untuk mengirim data ke Express
+  Future<void> _submitAnswers() async {
+    setState(() => _isSubmitting = true);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token');
+
+      // Tembak API Express
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2:5000/api/mobile/questionnaire/submit'),        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'answers': _scores, // Mengirim format array: [1, 2, 3, 2, 1]
+        }),
+      ).timeout(const Duration(seconds: 60));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['data'];
+
+        // ML & LLM selesai! Bawa data JSON utuh ke ResultScreen
+        // Catatan: Ini akan kita perbaiki di file ResultScreen pada langkah selanjutnya
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => ResultScreen(resultData: data)),
+        );
+      } else {
+        final msg = jsonDecode(response.body)['message'] ?? 'Gagal memproses data';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+
+        // Buka kunci jika gagal agar user bisa coba lagi
+        setState(() {
+          _isSubmitting = false;
+          _scores.removeLast(); // Hapus jawaban terakhir agar bisa diulang
+          _selected = null;
+          _locked = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal terhubung ke server backend.')),
+      );
+      setState(() {
+        _isSubmitting = false;
+        _scores.removeLast();
+        _selected = null;
+        _locked = false;
+      });
+    }
+  }
 
   void _choose(int i) {
-    if (_locked) return;
+    // Cegah klik ganda atau klik saat sedang loading dikirim ke server
+    if (_locked || _isSubmitting) return;
+
     setState(() {
       _selected = i;
       _locked = true;
     });
-    // Auto-advance (Hick's Law)
+
+    // Auto-advance
     Future.delayed(const Duration(milliseconds: 250), () {
       if (!mounted) return;
       _scores.add(_questions[_step].options[i].score);
+
       if (_step == _questions.length - 1) {
-        final total = _scores.fold<int>(0, (a, b) => a + b);
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => ResultScreen(type: RiskData.classify(total))),
-        );
+        // PERUBAHAN KRUSIAL: Kirim ke Backend, bukan dihitung manual!
+        _submitAnswers();
       } else {
         setState(() {
           _step++;
@@ -60,6 +122,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   @override
   Widget build(BuildContext context) {
     final q = _questions[_step];
+
     return Scaffold(
       body: GradientBackground(
         child: SafeArea(
@@ -82,29 +145,47 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                _Stepper(current: _step, total: _questions.length),
-                const SizedBox(height: 36),
-                Text(q.text,
-                    style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: q.options.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) => _OptionTile(
-                      option: q.options[i],
-                      selected: _selected == i,
-                      onTap: () => _choose(i),
+
+                // Tampilkan loading berputar jika sedang mengirim data
+                if (_isSubmitting) ...[
+                  const Spacer(),
+                  const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(color: AppColors.emerald),
+                        SizedBox(height: 20),
+                        Text('AI sedang menganalisis profil Anda...',
+                            style: TextStyle(color: Colors.white70, fontSize: 14)),
+                      ],
                     ),
                   ),
-                ),
-                TextButton(
-                  onPressed: _back,
-                  child: const Text('Kembali',
-                      style: TextStyle(color: Colors.white70, fontSize: 14)),
-                ),
-                const SizedBox(height: 8),
+                  const Spacer(),
+                ] else ...[
+                  _Stepper(current: _step, total: _questions.length),
+                  const SizedBox(height: 36),
+                  Text(q.text,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: ListView.separated(
+                      itemCount: q.options.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (_, i) => _OptionTile(
+                        option: q.options[i],
+                        selected: _selected == i,
+                        onTap: () => _choose(i),
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _back,
+                    child: const Text('Kembali',
+                        style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  ),
+                  const SizedBox(height: 8),
+                ],
               ],
             ),
           ),

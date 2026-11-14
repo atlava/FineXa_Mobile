@@ -40,7 +40,7 @@ class _MainShellState extends State<MainShell> {
       ),
       const SizedBox.shrink(),
       const FaqScreen(),
-      const ProfileScreen(),
+      ProfileScreen(userId: widget.userId),
     ];
 
     return Scaffold(

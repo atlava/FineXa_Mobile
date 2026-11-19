@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../data/risk_data.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common.dart';
+import '../widgets/error_widgets.dart';
 import 'main_shell.dart';
 import 'register_screen.dart';
 
@@ -20,6 +22,10 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _emailError;
   String? _passError;
   bool _isLoading = false; // Tambahan untuk indikator loading
+  String? _bannerTitle; // Error state: banner di atas form
+  String? _bannerMsg;
+
+  static final _emailRe = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
   @override
   void dispose() {
@@ -31,7 +37,11 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     // 1. Validasi form lokal
     setState(() {
-      _emailError = _email.text.trim().isEmpty ? 'Email belum diisi, ya' : null;
+      _bannerTitle = null;
+      _bannerMsg = null;
+      _emailError = _emailRe.hasMatch(_email.text.trim())
+          ? null
+          : 'Format email tidak valid (contoh: nama@email.com)';
       _passError = _pass.text.isEmpty ? 'Ups! Password belum diisi' : null;
     });
 
@@ -45,6 +55,9 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       // Sesuaikan URL dengan route Express-mu
       // Jika pakai emulator Android, gunakan 10.0.2.2
+      // Simulasi offline untuk demo error state
+      if (AppState.offline.value) throw Exception('Simulasi offline aktif');
+
       final url = Uri.parse('http://10.0.2.2:5000/api/auth/login');
 
       final response = await http.post(
@@ -76,23 +89,19 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(builder: (_) => MainShell(userId: userId.toString())),
         );
       } else {
-        // Jika server menolak (email/password salah)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(responseData['message'] ?? 'Gagal login.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        // Jika server menolak (email/password salah) -> banner error
+        setState(() {
+          _bannerTitle = 'Login gagal';
+          _bannerMsg = responseData['message']?.toString() ?? 'Email atau password salah.';
+        });
       }
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal terhubung ke server. Pastikan backend menyala.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      print("Error Login Flutter: $error");
+      setState(() {
+        _bannerTitle = 'Koneksi bermasalah';
+        _bannerMsg = 'Gagal terhubung ke server. Pastikan backend menyala.';
+      });
+      debugPrint("Error Login Flutter: $error");
     } finally {
       if (mounted) {
         setState(() {
@@ -118,6 +127,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 const Text('Selamat Datang\nKembali!',
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
                 const SizedBox(height: 28),
+                if (_bannerMsg != null) ...[
+                  ErrorBanner(title: _bannerTitle!, message: _bannerMsg!),
+                  const SizedBox(height: 16),
+                ],
                 AppTextField(
                   label: 'Email',
                   controller: _email,

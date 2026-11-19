@@ -73,19 +73,19 @@ class _BottomNav extends StatelessWidget {
 
   static const _items = [
     (Icons.home_outlined, 'Beranda'),
-    (Icons.pie_chart_outline, 'Saran'),
+    (Icons.schedule, 'Saran'),
     (Icons.help_outline, 'FAQ'),
-    (Icons.account_circle_outlined, 'Profil'),
+    (Icons.person_outline, 'Profil'),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFF14574A).withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+        color: const Color(0xFF0B3A2F).withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: AppColors.emerald.withValues(alpha: 0.35)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -96,24 +96,35 @@ class _BottomNav extends StatelessWidget {
             onTap: () => onTap(i),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              padding: selected
+                  ? const EdgeInsets.symmetric(horizontal: 18, vertical: 10)
+                  : const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: selected ? Colors.white : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
+                color: selected ? AppColors.lightCard : Colors.transparent,
+                borderRadius: BorderRadius.circular(24),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(_items[i].$1,
-                      size: 20, color: selected ? AppColors.textDark : Colors.white),
-                  const SizedBox(height: 2),
-                  Text(_items[i].$2,
-                      style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: selected ? AppColors.textDark : Colors.white)),
-                ],
-              ),
+              child: selected
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(_items[i].$1, size: 20, color: AppColors.textDark),
+                        const SizedBox(width: 8),
+                        Text(_items[i].$2,
+                            style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textDark)),
+                      ],
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(_items[i].$1, size: 22, color: Colors.white70),
+                        const SizedBox(height: 2),
+                        Text(_items[i].$2,
+                            style: const TextStyle(fontSize: 10, color: Colors.white70)),
+                      ],
+                    ),
             ),
           );
         }),

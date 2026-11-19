@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../data/risk_data.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common.dart';
+import '../widgets/error_widgets.dart';
 import 'main_shell.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -18,6 +20,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _pass = TextEditingController();
   final _confirm = TextEditingController();
   String? _nameErr, _emailErr, _passErr, _confirmErr;
+  String? _bannerTitle; // Error state: banner di atas form
+  String? _bannerMsg;
+
+  static final _emailRe = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
   @override
   void dispose() {
@@ -31,13 +37,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _register() async {
     setState(() {
       _nameErr = _name.text.trim().isEmpty ? 'Nama lengkap belum diisi, ya' : null;
-      _emailErr = !_email.text.contains('@') ? 'Format email belum sesuai, coba cek lagi ya' : null;
+      _bannerTitle = null;
+      _bannerMsg = null;
+      _emailErr = _emailRe.hasMatch(_email.text.trim())
+          ? null
+          : 'Format email tidak valid (contoh: nama@email.com)';
       _passErr = _pass.text.length < 6 ? 'Password minimal 6 karakter ya' : null;
-      _confirmErr = _confirm.text != _pass.text ? 'Konfirmasi password belum sama, coba lagi ya' : null;
+      _confirmErr = _confirm.text != _pass.text
+          ? 'Konfirmasi password tidak cocok dengan password utama'
+          : null;
     });
+
+    // SIMULASI (boleh dihapus): email berisi "sudahada" dianggap sudah terdaftar
+    if (_email.text.trim().toLowerCase().contains('sudahada')) {
+      setState(() {
+        _bannerTitle = 'Akun sudah ada';
+        _bannerMsg = 'Email sudah terdaftar. Silakan masuk atau gunakan email lain.';
+      });
+      return;
+    }
 
     if ([_nameErr, _emailErr, _passErr, _confirmErr].every((e) => e == null)) {
       try {
+        // Simulasi offline untuk demo error state
+        if (AppState.offline.value) throw Exception('Simulasi offline aktif');
+
         final response = await http.post(
           Uri.parse('http://10.0.2.2:5000/api/auth/register'),
           headers: {'Content-Type': 'application/json'},
@@ -66,16 +90,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
         } else {
           // Tangani error dari server (misal: email sudah terdaftar)
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(data['message'] ?? 'Registrasi gagal, silakan coba lagi')),
-          );
+          final msg = data['message']?.toString() ?? 'Registrasi gagal, silakan coba lagi';
+          final exists = response.statusCode == 409 ||
+              msg.toLowerCase().contains('terdaftar') ||
+              msg.toLowerCase().contains('sudah');
+          setState(() {
+            _bannerTitle = exists ? 'Akun sudah ada' : 'Registrasi gagal';
+            _bannerMsg = exists
+                ? 'Email sudah terdaftar. Silakan masuk atau gunakan email lain.'
+                : msg;
+          });
         }
       } catch (e) {
         if (!mounted) return;
         // Tangani error koneksi
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Koneksi ke server gagal: $e')),
-        );
+        debugPrint('Error register: $e');
+        setState(() {
+          _bannerTitle = 'Koneksi bermasalah';
+          _bannerMsg = 'Gagal terhubung ke server. Pastikan backend menyala.';
+        });
       }
     }
   }
@@ -94,6 +127,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const Text('Daftar',
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
                 const SizedBox(height: 28),
+                if (_bannerMsg != null) ...[
+                  ErrorBanner(title: _bannerTitle!, message: _bannerMsg!),
+                  const SizedBox(height: 16),
+                ],
                 AppTextField(label: 'Nama Lengkap', controller: _name, errorText: _nameErr),
                 const SizedBox(height: 12),
                 AppTextField(

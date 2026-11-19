@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import '../data/risk_data.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common.dart';
+import '../widgets/error_widgets.dart';
+import 'home_error_view.dart';
 import 'questionnaire_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -25,18 +27,39 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
+  bool _hasError = false; // true saat gagal terhubung ke server
 
   @override
   void initState() {
     super.initState();
     _fetchUserData();
+    // Saklar simulasi offline (long-press logo) -> muat ulang data
+    AppState.offline.addListener(_reload);
+  }
+
+  @override
+  void dispose() {
+    AppState.offline.removeListener(_reload);
+    super.dispose();
+  }
+
+  void _reload() {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+    _fetchUserData();
   }
 
   Future<void> _fetchUserData() async {
     try {
+      // Simulasi offline untuk demo error state
+      if (AppState.offline.value) throw Exception('Simulasi offline aktif');
+
       // Catatan: 10.0.2.2 adalah IP khusus emulator Android untuk mengakses localhost PC
       final url = Uri.parse('http://10.0.2.2:5000/api/beranda/user-profile/${widget.userId}');
-      final response = await http.get(url);
+      final response = await http.get(url).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -53,9 +76,12 @@ class _HomeScreenState extends State<HomeScreen> {
         } else {
           AppState.risk.value = null;
         }
+      } else if (response.statusCode >= 500) {
+        throw Exception('Server error ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('Error fetching data: $e');
+      _hasError = true; // tampilkan error state (setState ada di finally)
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -72,6 +98,11 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.emerald),
       );
+    }
+
+    // Error state: gagal terhubung ke server
+    if (_hasError) {
+      return HomeErrorView(onRetry: _reload);
     }
 
     return ValueListenableBuilder<RiskType?>(
@@ -299,15 +330,19 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _IconBox(Icons.trending_up),
-          Text('Beranda',
+          // Tahan lama logo = ON/OFF simulasi offline (khusus demo error state)
+          GestureDetector(
+            onLongPress: () => toggleOfflineMode(context),
+            child: const _IconBox(Icons.trending_up),
+          ),
+          const Text('Beranda',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
-          _IconBox(Icons.notifications_none),
+          const _IconBox(Icons.notifications_none),
         ],
       ),
     );

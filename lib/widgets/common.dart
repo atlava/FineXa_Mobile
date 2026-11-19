@@ -112,15 +112,18 @@ class AppTextField extends StatelessWidget {
           controller: controller,
           obscureText: obscure,
           keyboardType: keyboardType,
-          cursorColor: AppColors.emerald,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
+          cursorColor: hasError ? AppColors.error : AppColors.emerald,
+          // Error state: isi putih + border merah (sesuai desain)
+          style: TextStyle(
+              color: hasError ? AppColors.textDark : Colors.white, fontSize: 14),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.1),
+            fillColor: hasError ? Colors.white : Colors.white.withValues(alpha: 0.1),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: _border(Colors.white24),
-            enabledBorder: _border(hasError ? AppColors.error : Colors.white.withValues(alpha: 0.25)),
+            enabledBorder:
+                _border(hasError ? AppColors.error : Colors.white.withValues(alpha: 0.25)),
             focusedBorder: _border(hasError ? AppColors.error : AppColors.emerald),
           ),
         ),
@@ -128,8 +131,12 @@ class AppTextField extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.error_outline, size: 14, color: AppColors.error),
+                const Padding(
+                  padding: EdgeInsets.only(top: 1),
+                  child: Icon(Icons.error_outline, size: 14, color: AppColors.error),
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(errorText!,

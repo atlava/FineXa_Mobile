@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../data/risk_data.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common.dart';
+import '../widgets/error_widgets.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -271,6 +272,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     try {
+      // Simulasi offline untuk demo error state
+      if (AppState.offline.value) throw Exception('Simulasi offline aktif');
+
       final url = Uri.parse('http://10.0.2.2:5000/api/users/${widget.userId}');
       final response = await http.put(
         url,
@@ -282,7 +286,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'lokasi': location.isEmpty ? null : location,
           'tanggal_lahir': dob.isEmpty ? null : dob,
         }),
-      );
+      ).timeout(const Duration(seconds: 15));
+
+      // Server error (500 dst) -> error state
+      if (response.statusCode >= 500) {
+        throw Exception('Server error ${response.statusCode}');
+      }
 
       final result = jsonDecode(response.body);
 
@@ -298,8 +307,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } catch (e) {
       debugPrint('Error update profile: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Terjadi kesalahan koneksi ke server.')),
+      if (!mounted) return;
+      // Error state: gagal menyimpan (timeout / server error / koneksi putus)
+      showBlurDialog(
+        context,
+        builder: (ctx) => SaveFailedDialog(
+          onRetry: () {
+            Navigator.pop(ctx);
+            _updateProfileData(name, email, phone, location, dob);
+          },
+          onClose: () => Navigator.pop(ctx),
+        ),
       );
     }
   }
@@ -405,6 +423,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
 
       AppState.risk.value = null;
+      AppState.offline.value = false; // reset simulasi offline
 
       if (mounted) {
         Navigator.pushAndRemoveUntil(

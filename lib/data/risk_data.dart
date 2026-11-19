@@ -6,6 +6,10 @@ enum RiskType { konservatif, moderat, agresif }
 // 2. State Global untuk Menyimpan Status Risiko User
 class AppState {
   static final ValueNotifier<RiskType?> risk = ValueNotifier<RiskType?>(null);
+
+  /// Simulasi koneksi putus / server error (untuk demo error state).
+  /// Tahan lama (long-press) logo di header Beranda untuk ON/OFF.
+  static final ValueNotifier<bool> offline = ValueNotifier<bool>(false);
 }
 
 class AllocItem {

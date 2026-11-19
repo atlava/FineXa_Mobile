@@ -2,14 +2,73 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common.dart';
 import '../data/risk_data.dart';
+import '../widgets/error_widgets.dart';
 
-class ResultScreen extends StatelessWidget {
+class ResultScreen extends StatefulWidget {
   final Map<String, dynamic> resultData;
 
   const ResultScreen({super.key, required this.resultData});
 
   @override
+  State<ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends State<ResultScreen> {
+  bool _saving = false;
+
+  // Konversi teks profil dari backend ke RiskType enum
+  RiskType _toRiskType(String profil) {
+    final pLower = profil.toLowerCase();
+    if (pLower.contains('agresif')) return RiskType.agresif;
+    if (pLower.contains('konservatif')) return RiskType.konservatif;
+    return RiskType.moderat; // Default aman
+  }
+
+  Future<void> _apply(String profil) async {
+    setState(() => _saving = true);
+    try {
+      // Simulasi offline untuk demo error state
+      if (AppState.offline.value) throw Exception('Simulasi offline aktif');
+
+      // TODO: kirim "Terapkan Rekomendasi" ke server di sini, contoh:
+      // final res = await http.post(Uri.parse('http://10.0.2.2:5000/api/...'), ...)
+      //     .timeout(const Duration(seconds: 15));
+      // if (res.statusCode >= 500) throw Exception('Server error');
+      // Kalau request gagal / timeout, popup "Koneksi Terputus" otomatis muncul.
+
+      if (!mounted) return;
+      setState(() => _saving = false);
+
+      // 1. Simpan profil risiko ke state aplikasi
+      AppState.risk.value = _toRiskType(profil);
+      // 2. Kembali ke halaman utama (MainShell)
+      Navigator.popUntil(context, (r) => r.isFirst);
+    } catch (e) {
+      debugPrint('Error apply rekomendasi: $e');
+      if (!mounted) return;
+      setState(() => _saving = false);
+      // Error state: gagal mengirim ke server
+      showBlurDialog(
+        context,
+        builder: (ctx) => OfflineSaveDialog(
+          onRetry: () {
+            Navigator.pop(ctx);
+            _apply(profil);
+          },
+          onNetworkSettings: () {
+            Navigator.pop(ctx);
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text(
+                    'Aktifkan Wi-Fi/data seluler, lalu tekan Terapkan Rekomendasi lagi.')));
+          },
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final resultData = widget.resultData;
     // Menangkap data dari respons backend Express
     final String profil = resultData['profil_risiko']?.toString() ?? 'Moderat';
     final String expectedReturn = resultData['expected_return']?.toString() ?? '10 - 15% / tahun';
@@ -101,20 +160,9 @@ class ResultScreen extends StatelessWidget {
                 ),
                 const Spacer(),
                 PrimaryButton(
-                  label: 'Terapkan Rekomendasi',
-                  icon: Icons.check,
-                  onPressed: () {
-//                  1. Konversi teks profil dari backend ke RiskType enum
-                    final pLower = profil.toLowerCase();
-                    if (pLower.contains('agresif')) {
-                      AppState.risk.value = RiskType.agresif;
-                    } else if (pLower.contains('konservatif')) {
-                      AppState.risk.value = RiskType.konservatif;
-                    } else {
-                      AppState.risk.value = RiskType.moderat; // Default aman
-                    }
-                    // 2. Kembali ke halaman utama (MainShell)
-                    Navigator.popUntil(context, (r) => r.isFirst);                  },
+                  label: _saving ? 'Menyimpan...' : 'Terapkan Rekomendasi',
+                  icon: _saving ? null : Icons.check,
+                  onPressed: _saving ? null : () => _apply(profil),
                 ),
                 const SizedBox(height: 24),
               ],

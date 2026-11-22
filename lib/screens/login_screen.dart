@@ -8,6 +8,7 @@ import '../widgets/common.dart';
 import '../widgets/error_widgets.dart';
 import 'main_shell.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -147,7 +148,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ForgotPasswordScreen(initialEmail: _email.text.trim()),
+                      ),
+                    ),
                     child: const Text('Lupa password?',
                         style: TextStyle(color: AppColors.emerald, fontSize: 11)),
                   ),

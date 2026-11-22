@@ -9,6 +9,7 @@ import '../widgets/common.dart';
 import '../widgets/error_widgets.dart';
 import 'home_error_view.dart';
 import 'questionnaire_screen.dart';
+import 'investment_products_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onGoToFaq;
@@ -192,8 +193,13 @@ class _HomeScreenState extends State<HomeScreen> {
             _QuickTile(
               icon: Icons.pie_chart_outline,
               label: 'Produk Investasi',
-              onTap: () => ScaffoldMessenger.of(context)
-                  .showSnackBar(const SnackBar(content: Text('Segera hadir'))),),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const InvestmentProductsScreen(),
+                ),
+              ),
+            ),
             const SizedBox(width: 10),
             _QuickTile(
                 icon: Icons.show_chart,

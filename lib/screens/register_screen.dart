@@ -6,6 +6,7 @@ import '../widgets/error_widgets.dart';
 import 'main_shell.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -24,6 +25,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _bannerMsg;
 
   static final _emailRe = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+  static final _passwordRe =
+  RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[~`!@#$%^=&_>,.</?\x27\x22:;}{|]).{8,}$');
 
   @override
   void dispose() {
@@ -42,7 +45,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _emailErr = _emailRe.hasMatch(_email.text.trim())
           ? null
           : 'Format email tidak valid (contoh: nama@email.com)';
-      _passErr = _pass.text.length < 6 ? 'Password minimal 6 karakter ya' : null;
+      _passErr = _passwordRe.hasMatch(_pass.text)
+          ? null
+          : 'Minimal 8 karakter (huruf besar, kecil, angka & simbol)';
       _confirmErr = _confirm.text != _pass.text
           ? 'Konfirmasi password tidak cocok dengan password utama'
           : null;
@@ -75,8 +80,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         final data = jsonDecode(response.body);
 
         if (response.statusCode == 200 || response.statusCode == 201) {
-          // Tangkap ID user baru dari respons JSON backend
+          // Tangkap ID user baru & token JWT dari respons JSON backend
           final int userIdRegister = data['data']['id_user'];
+          final String? tokenRegister = data['data']['token'];
+
+          // Simpan ke SharedPreferences agar kuesioner & halaman lain ter-autentikasi
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('user_id', userIdRegister);
+          if (tokenRegister != null) {
+            await prefs.setString('jwt_token', tokenRegister);
+          }
 
           if (!mounted) return;
 

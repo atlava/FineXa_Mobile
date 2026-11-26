@@ -20,6 +20,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _pass = TextEditingController();
+  bool _obscurePassword = true;
   String? _emailError;
   String? _passError;
   bool _isLoading = false; // Tambahan untuk indikator loading
@@ -142,8 +143,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 AppTextField(
                   label: 'Password',
                   controller: _pass,
-                  obscure: true,
+                  obscure: _obscurePassword,
                   errorText: _passError,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: _passError != null ? AppColors.textDark : Colors.white70,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
                 ),
                 Align(
                   alignment: Alignment.centerRight,

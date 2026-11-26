@@ -85,6 +85,7 @@ class AppTextField extends StatelessWidget {
   final bool obscure;
   final String? errorText;
   final TextInputType? keyboardType;
+  final Widget? suffixIcon;
 
   const AppTextField({
     super.key,
@@ -93,12 +94,13 @@ class AppTextField extends StatelessWidget {
     this.obscure = false,
     this.errorText,
     this.keyboardType,
+    this.suffixIcon,
   });
 
   OutlineInputBorder _border(Color c) => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
-        borderSide: BorderSide(color: c, width: 1.2),
-      );
+    borderRadius: BorderRadius.circular(20),
+    borderSide: BorderSide(color: c, width: 1.2),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -121,9 +123,10 @@ class AppTextField extends StatelessWidget {
             fillColor: hasError ? Colors.white : Colors.white.withValues(alpha: 0.1),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            suffixIcon: suffixIcon,
             border: _border(Colors.white24),
             enabledBorder:
-                _border(hasError ? AppColors.error : Colors.white.withValues(alpha: 0.25)),
+            _border(hasError ? AppColors.error : Colors.white.withValues(alpha: 0.25)),
             focusedBorder: _border(hasError ? AppColors.error : AppColors.emerald),
           ),
         ),
@@ -194,33 +197,33 @@ class AllocationBars extends StatelessWidget {
     return Column(
       children: items
           .map((e) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                child: Row(
-                  children: [
-                    Expanded(
-                        flex: 5,
-                        child: Text(e.name, style: const TextStyle(fontSize: 11))),
-                    Expanded(
-                      flex: 5,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: e.pct / 100,
-                          minHeight: 6,
-                          backgroundColor: AppColors.textDark,
-                          valueColor: const AlwaysStoppedAnimation(AppColors.emerald),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 38,
-                      child: Text('${e.pct}%',
-                          textAlign: TextAlign.right,
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-                    ),
-                  ],
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Row(
+          children: [
+            Expanded(
+                flex: 5,
+                child: Text(e.name, style: const TextStyle(fontSize: 11))),
+            Expanded(
+              flex: 5,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: e.pct / 100,
+                  minHeight: 6,
+                  backgroundColor: AppColors.textDark,
+                  valueColor: const AlwaysStoppedAnimation(AppColors.emerald),
                 ),
-              ))
+              ),
+            ),
+            SizedBox(
+              width: 38,
+              child: Text('${e.pct}%',
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ))
           .toList(),
     );
   }

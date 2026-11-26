@@ -20,6 +20,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _email = TextEditingController();
   final _pass = TextEditingController();
   final _confirm = TextEditingController();
+  bool _obscurePass = true;
+  bool _obscureConfirm = true;
   String? _nameErr, _emailErr, _passErr, _confirmErr;
   String? _bannerTitle; // Error state: banner di atas form
   String? _bannerMsg;
@@ -153,13 +155,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     errorText: _emailErr),
                 const SizedBox(height: 12),
                 AppTextField(
-                    label: 'Password', controller: _pass, obscure: true, errorText: _passErr),
+                  label: 'Password',
+                  controller: _pass,
+                  obscure: _obscurePass,
+                  errorText: _passErr,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePass ? Icons.visibility_off : Icons.visibility,
+                      color: _passErr != null ? AppColors.textDark : Colors.white70,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePass = !_obscurePass;
+                      });
+                    },
+                  ),
+                ),
                 const SizedBox(height: 12),
                 AppTextField(
-                    label: 'Konfirmasi Password',
-                    controller: _confirm,
-                    obscure: true,
-                    errorText: _confirmErr),
+                  label: 'Konfirmasi Password',
+                  controller: _confirm,
+                  obscure: _obscureConfirm,
+                  errorText: _confirmErr,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                      color: _confirmErr != null ? AppColors.textDark : Colors.white70,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureConfirm = !_obscureConfirm;
+                      });
+                    },
+                  ),
+                ),
                 const SizedBox(height: 28),
                 PrimaryButton(label: 'Daftar', onPressed: _register),
                 const SizedBox(height: 12),

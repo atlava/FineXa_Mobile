@@ -36,7 +36,7 @@ class _InvestmentProductsScreenState extends State<InvestmentProductsScreen> {
         throw Exception('Mode offline aktif');
       }
 
-      final url = Uri.parse('http://10.0.2.2:5000/api/assets');
+      final url = Uri.parse('https://befinexaexpress-production.up.railway.app/api/assets');
       final response = await http.get(url).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {

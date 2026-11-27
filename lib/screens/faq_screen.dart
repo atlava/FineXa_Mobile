@@ -64,7 +64,7 @@ class _FaqScreenState extends State<FaqScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:5000/api/faq'),
+        Uri.parse('https://befinexaexpress-production.up.railway.app/api/faq'),
         headers: {
           'Content-Type': 'application/json',
           if (_token != null) 'Authorization': 'Bearer $_token',
@@ -113,7 +113,7 @@ class _FaqScreenState extends State<FaqScreen> {
 
     try {
       await http.post(
-        Uri.parse('http://10.0.2.2:5000/api/faq/log'),
+        Uri.parse('https://befinexaexpress-production.up.railway.app/api/faq/log'),
         headers: {
           'Content-Type': 'application/json',
           if (_token != null) 'Authorization': 'Bearer $_token',

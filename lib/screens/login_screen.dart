@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // Simulasi offline untuk demo error state
       if (AppState.offline.value) throw Exception('Simulasi offline aktif');
 
-      final url = Uri.parse('http://10.0.2.2:5000/api/auth/login');
+      final url = Uri.parse('https://befinexaexpress-production.up.railway.app/api/auth/login');
 
       final response = await http.post(
         url,

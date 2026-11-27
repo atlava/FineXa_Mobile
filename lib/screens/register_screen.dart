@@ -70,7 +70,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (AppState.offline.value) throw Exception('Simulasi offline aktif');
 
         final response = await http.post(
-          Uri.parse('http://10.0.2.2:5000/api/auth/register'),
+          Uri.parse('https://befinexaexpress-production.up.railway.app/api/auth/register'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
             'nama_lengkap': _name.text.trim(),

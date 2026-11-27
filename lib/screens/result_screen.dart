@@ -31,7 +31,7 @@ class _ResultScreenState extends State<ResultScreen> {
       if (AppState.offline.value) throw Exception('Simulasi offline aktif');
 
       // TODO: kirim "Terapkan Rekomendasi" ke server di sini, contoh:
-      // final res = await http.post(Uri.parse('http://10.0.2.2:5000/api/...'), ...)
+      // final res = await http.post(Uri.parse('https://befinexaexpress-production.up.railway.app/api/...'), ...)
       //     .timeout(const Duration(seconds: 15));
       // if (res.statusCode >= 500) throw Exception('Server error');
       // Kalau request gagal / timeout, popup "Koneksi Terputus" otomatis muncul.

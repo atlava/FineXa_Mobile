@@ -33,7 +33,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
       // Tembak API Express
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:5000/api/mobile/questionnaire/submit'),        headers: {
+        Uri.parse('https://befinexaexpress-production.up.railway.app/api/mobile/questionnaire/submit'),        headers: {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
         },

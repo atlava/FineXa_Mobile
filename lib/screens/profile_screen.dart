@@ -31,7 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _fetchProfileData() async {
     try {
-      final url = Uri.parse('http://10.0.2.2:5000/api/users/${widget.userId}');
+      final url = Uri.parse('https://befinexaexpress-production.up.railway.app/api/users/${widget.userId}');
       print('DEBUG URL: $url');
       final response = await http.get(url);
       print('DEBUG STATUS: ${response.statusCode}');
@@ -275,7 +275,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Simulasi offline untuk demo error state
       if (AppState.offline.value) throw Exception('Simulasi offline aktif');
 
-      final url = Uri.parse('http://10.0.2.2:5000/api/users/${widget.userId}');
+      final url = Uri.parse('https://befinexaexpress-production.up.railway.app/api/users/${widget.userId}');
       final response = await http.put(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -415,7 +415,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _performLogout() async {
     try {
-      final url = Uri.parse('http://10.0.2.2:5000/api/auth/logout');
+      final url = Uri.parse('https://befinexaexpress-production.up.railway.app/api/auth/logout');
 
       await http.post(
         url,

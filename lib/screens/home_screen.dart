@@ -59,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (AppState.offline.value) throw Exception('Simulasi offline aktif');
 
       // Catatan: 10.0.2.2 adalah IP khusus emulator Android untuk mengakses localhost PC
-      final url = Uri.parse('http://10.0.2.2:5000/api/beranda/user-profile/${widget.userId}');
+      final url = Uri.parse('https://befinexaexpress-production.up.railway.app/api/beranda/user-profile/${widget.userId}');
       final response = await http.get(url).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {

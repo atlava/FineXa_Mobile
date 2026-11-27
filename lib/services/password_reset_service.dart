@@ -15,7 +15,7 @@ class PasswordResetService {
   static const bool useMock = false;
   static const String mockCode = '123456';
 
-  static const String _base = 'http://10.0.2.2:5000/api/password';
+  static const String _base = 'https://befinexaexpress-production.up.railway.app/api/password';
 
   /// 1. POST /api/password/request-otp -> body: {email}
   static Future<ApiResult> sendCode(String email) => _post(
